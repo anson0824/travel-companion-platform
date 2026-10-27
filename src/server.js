@@ -18,6 +18,7 @@ const itinerariesRoutes = require('./routes/itineraries');
 init();
 
 const app = express();
+app.set('trust proxy', 1); // Render/Cloudflare terminate TLS in front of the app
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-travel-companion-secret-change-me';
 
