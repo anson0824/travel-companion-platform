@@ -1,0 +1,79 @@
+<%- include('../partials/header') %>
+<section class="page-head">
+  <div>
+    <p class="eyebrow"><%= escapeHtml(trip.destination) %></p>
+    <h1><%= escapeHtml(trip.name) %></h1>
+    <p class="meta">
+      Owner @<%= escapeHtml(trip.owner_name) %> ·
+      <%= formatDate(trip.start_date) %> – <%= formatDate(trip.end_date) %>
+    </p>
+  </div>
+</section>
+
+<div class="split">
+  <section class="panel">
+    <h2>Members</h2>
+    <ul class="list">
+      <% members.forEach(function(m) { %>
+        <li>@<%= escapeHtml(m.username) %> <span class="badge"><%= escapeHtml(m.role) %></span></li>
+      <% }) %>
+    </ul>
+    <% if (trip.owner_id === currentUser.id) { %>
+      <form method="POST" action="/itineraries/<%= trip.id %>/invite" class="mt">
+        <label>Invite by username or email
+          <input type="text" name="identifier" required placeholder="demo or demo@travel.local" />
+        </label>
+        <button class="btn btn-secondary btn-sm" type="submit">Invite</button>
+      </form>
+    <% } %>
+  </section>
+
+  <section class="panel">
+    <h2>Add day item</h2>
+    <form method="POST" action="/itineraries/<%= trip.id %>/items">
+      <div class="form-row">
+        <label>Day #
+          <input type="number" name="day_number" min="1" value="1" required />
+        </label>
+        <label>Time
+          <input type="time" name="time" />
+        </label>
+      </div>
+      <label>Place
+        <input type="text" name="place" required maxlength="120" />
+      </label>
+      <label>Notes
+        <textarea name="notes" rows="2" maxlength="500"></textarea>
+      </label>
+      <button class="btn btn-primary btn-sm" type="submit">Add item</button>
+    </form>
+  </section>
+</div>
+
+<section class="panel mt">
+  <h2>Itinerary</h2>
+  <% if (!items.length) { %>
+    <p class="muted">No items yet — co-members can add places and notes.</p>
+  <% } else { %>
+    <% var currentDay = null; %>
+    <% items.forEach(function(item) { %>
+      <% if (item.day_number !== currentDay) { currentDay = item.day_number; %>
+        <h3 class="day-head">Day <%= item.day_number %></h3>
+      <% } %>
+      <div class="itinerary-item">
+        <div>
+          <strong><%= escapeHtml(item.place) %></strong>
+          <% if (item.time) { %><span class="muted"> · <%= escapeHtml(item.time) %></span><% } %>
+          <% if (item.notes) { %><p class="muted"><%= escapeHtml(item.notes) %></p><% } %>
+          <p class="meta">added by @<%= escapeHtml(item.author) %></p>
+        </div>
+        <form method="POST" action="/itineraries/<%= trip.id %>/items/<%= item.id %>/delete"
+              onsubmit="return confirm('Remove this item?');">
+          <button class="btn btn-sm btn-ghost" type="submit">Remove</button>
+        </form>
+      </div>
+    <% }) %>
+  <% } %>
+</section>
+<p><a href="/itineraries">← Back to trips</a></p>
+<%- include('../partials/footer') %>

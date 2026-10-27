@@ -1,0 +1,62 @@
+<%- include('partials/header') %>
+<section class="page-head">
+  <div>
+    <h1>Welcome, <%= escapeHtml(currentUser.username) %></h1>
+    <p class="muted">Your hub for companions, trips, and shared experiences.</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-primary" href="/posts/new">Share experience</a>
+    <a class="btn btn-secondary" href="/itineraries/new">New trip</a>
+  </div>
+</section>
+
+<div class="stat-row">
+  <div class="stat"><strong><%= myPosts.length %></strong><span>Recent posts</span></div>
+  <div class="stat"><strong><%= myTrips.length %></strong><span>Active trips</span></div>
+  <div class="stat"><strong><%= pendingRequests %></strong><span>Pending companion requests</span></div>
+</div>
+
+<div class="split">
+  <section class="panel">
+    <div class="section-head">
+      <h2>Your experiences</h2>
+      <a href="/posts">All posts</a>
+    </div>
+    <% if (!myPosts.length) { %>
+      <p class="muted">You haven't posted yet.</p>
+    <% } else { %>
+      <ul class="list">
+        <% myPosts.forEach(function(p) { %>
+          <li><a href="/posts/<%= p.id %>"><%= escapeHtml(p.title) %></a> <span class="muted"><%= escapeHtml(p.destination) %></span></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+  <section class="panel">
+    <div class="section-head">
+      <h2>Your trips</h2>
+      <a href="/itineraries">All trips</a>
+    </div>
+    <% if (!myTrips.length) { %>
+      <p class="muted">No trips yet — create one and invite companions.</p>
+    <% } else { %>
+      <ul class="list">
+        <% myTrips.forEach(function(t) { %>
+          <li><a href="/itineraries/<%= t.id %>"><%= escapeHtml(t.name) %></a> <span class="muted"><%= escapeHtml(t.destination) %></span></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+</div>
+
+<section class="panel mt">
+  <h2>Quick links</h2>
+  <div class="chip-row">
+    <a class="chip" href="/matchmaking">Update matchmaking profile</a>
+    <a class="chip" href="/posts/new">Post an experience</a>
+    <% if (currentUser.role === 'admin') { %>
+      <a class="chip" href="/admin">Open admin panel</a>
+    <% } %>
+  </div>
+</section>
+<%- include('partials/footer') %>

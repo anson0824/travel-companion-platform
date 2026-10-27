@@ -1,0 +1,24 @@
+<%- include('../partials/header') %>
+<section class="auth-wrap">
+  <form class="auth-card" method="POST" action="/register" novalidate>
+    <h1>Create account</h1>
+    <p class="muted">Register with email + password. Username is your public display name.</p>
+    <label>Email
+      <input type="email" name="email" required value="<%= escapeHtml(form.email || '') %>" autocomplete="email" />
+    </label>
+    <label>Username
+      <input type="text" name="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+"
+             value="<%= escapeHtml(form.username || '') %>" autocomplete="username"
+             placeholder="letters, numbers, underscore" />
+    </label>
+    <label>Password
+      <input type="password" name="password" required minlength="6" autocomplete="new-password" />
+    </label>
+    <label>Confirm password
+      <input type="password" name="confirm" required minlength="6" autocomplete="new-password" />
+    </label>
+    <button class="btn btn-primary btn-block" type="submit">Sign up</button>
+    <p class="muted center">Already have an account? <a href="/login">Log in</a></p>
+  </form>
+</section>
+<%- include('../partials/footer') %>

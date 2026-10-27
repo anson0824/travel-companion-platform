@@ -1,0 +1,25 @@
+<%- include('../partials/header') %>
+<section class="panel form-panel">
+  <h1>Create a trip</h1>
+  <form method="POST" action="/itineraries">
+    <label>Trip name
+      <input type="text" name="name" required maxlength="100" value="<%= escapeHtml(form.name || '') %>" />
+    </label>
+    <label>Destination
+      <input type="text" name="destination" required maxlength="80" value="<%= escapeHtml(form.destination || '') %>" />
+    </label>
+    <div class="form-row">
+      <label>Start date
+        <input type="date" name="start_date" value="<%= escapeHtml(form.start_date || '') %>" />
+      </label>
+      <label>End date
+        <input type="date" name="end_date" value="<%= escapeHtml(form.end_date || '') %>" />
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">Create</button>
+      <a class="btn btn-ghost" href="/itineraries">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/footer') %>

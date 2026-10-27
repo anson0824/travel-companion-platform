@@ -1,0 +1,26 @@
+<%- include('../partials/header') %>
+<article class="panel post-detail">
+  <p class="eyebrow"><%= escapeHtml(post.destination) %></p>
+  <h1><%= escapeHtml(post.title) %></h1>
+  <p class="meta">
+    by @<%= escapeHtml(post.username) %> · posted <%= formatDate(post.created_at) %>
+    <% if (post.start_date) { %> · trip <%= formatDate(post.start_date) %><% if (post.end_date) { %>–<%= formatDate(post.end_date) %><% } %><% } %>
+  </p>
+  <div class="chip-row mb">
+    <% splitTags(post.tags).forEach(function(tag) { %>
+      <span class="chip chip-static">#<%= escapeHtml(tag) %></span>
+    <% }) %>
+  </div>
+  <div class="prose"><%= escapeHtml(post.content) %></div>
+
+  <% if (currentUser && (currentUser.id === post.user_id || currentUser.role === 'admin')) { %>
+    <div class="actions mt">
+      <a class="btn btn-secondary" href="/posts/<%= post.id %>/edit">Edit</a>
+      <form class="inline" method="POST" action="/posts/<%= post.id %>?_method=DELETE" onsubmit="return confirm('Delete this post?');">
+        <button class="btn btn-danger" type="submit">Delete</button>
+      </form>
+    </div>
+  <% } %>
+</article>
+<p><a href="/posts">← Back to experiences</a></p>
+<%- include('../partials/footer') %>

@@ -1,0 +1,92 @@
+<%- include('../partials/header') %>
+<section class="page-head">
+  <div>
+    <h1>Companion matchmaking</h1>
+    <p class="muted">Set where and when you want to travel — we'll surface overlapping travelers.</p>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Your travel preferences</h2>
+  <form method="POST" action="/matchmaking/profile">
+    <label>Destinations interested in (comma-separated)
+      <input type="text" name="destinations" value="<%= escapeHtml(profile.destinations || '') %>"
+             placeholder="Tokyo, Bali, Lisbon" />
+    </label>
+    <div class="form-row">
+      <label>Travel start
+        <input type="date" name="travel_start" value="<%= escapeHtml(profile.travel_start || '') %>" />
+      </label>
+      <label>Travel end
+        <input type="date" name="travel_end" value="<%= escapeHtml(profile.travel_end || '') %>" />
+      </label>
+    </div>
+    <label>Travel style tags
+      <input type="text" name="travel_styles" value="<%= escapeHtml(profile.travel_styles || '') %>"
+             placeholder="food, adventure, budget, culture" />
+    </label>
+    <label>Short bio
+      <textarea name="bio" rows="3" maxlength="500"><%= escapeHtml(profile.bio || '') %></textarea>
+    </label>
+    <button class="btn btn-primary" type="submit">Save preferences</button>
+  </form>
+</section>
+
+<section class="panel mt">
+  <h2>Matching travelers</h2>
+  <% if (!matches.length) { %>
+    <p class="muted">No overlaps yet. Add destinations and dates above, or wait for more travelers.</p>
+  <% } else { %>
+    <div class="card-grid">
+      <% matches.forEach(function(m) { %>
+        <article class="card">
+          <h3>@<%= escapeHtml(m.username) %></h3>
+          <p><strong>Going:</strong> <%= escapeHtml(m.destinations || '—') %></p>
+          <p><strong>Dates:</strong> <%= formatDate(m.travel_start) %> – <%= formatDate(m.travel_end) %></p>
+          <p><strong>Style:</strong> <%= escapeHtml(m.travel_styles || '—') %></p>
+          <p class="muted"><%= escapeHtml(m.bio || '') %></p>
+          <p class="meta">
+            <% if (m.destHit) { %><span class="badge">destination match</span><% } %>
+            <% if (m.dateHit) { %><span class="badge">date overlap</span><% } %>
+          </p>
+          <form method="POST" action="/matchmaking/request">
+            <input type="hidden" name="to_user_id" value="<%= m.id %>" />
+            <label>Message
+              <input type="text" name="message" maxlength="300" placeholder="Want to explore together?" />
+            </label>
+            <button class="btn btn-secondary btn-sm" type="submit">Send companion request</button>
+          </form>
+        </article>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+
+<section class="panel mt">
+  <h2>Companion requests</h2>
+  <% if (!requests.length) { %>
+    <p class="muted">No requests yet.</p>
+  <% } else { %>
+    <ul class="list">
+      <% requests.forEach(function(r) { %>
+        <li>
+          <strong>@<%= escapeHtml(r.from_username) %></strong> →
+          <strong>@<%= escapeHtml(r.to_username) %></strong>
+          <span class="badge"><%= escapeHtml(r.status) %></span>
+          <% if (r.message) { %><span class="muted">“<%= escapeHtml(r.message) %>”</span><% } %>
+          <% if (r.status === 'pending' && r.to_user_id === currentUser.id) { %>
+            <form class="inline" method="POST" action="/matchmaking/request/<%= r.id %>/respond">
+              <input type="hidden" name="status" value="accepted" />
+              <button class="btn btn-sm btn-primary" type="submit">Accept</button>
+            </form>
+            <form class="inline" method="POST" action="/matchmaking/request/<%= r.id %>/respond">
+              <input type="hidden" name="status" value="declined" />
+              <button class="btn btn-sm btn-ghost" type="submit">Decline</button>
+            </form>
+          <% } %>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+<%- include('../partials/footer') %>

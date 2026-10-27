@@ -1,0 +1,34 @@
+<%- include('../partials/header') %>
+<section class="page-head">
+  <div>
+    <h1>Travel experiences</h1>
+    <p class="muted">Tips, stories, and lessons from the road.</p>
+  </div>
+  <% if (currentUser) { %>
+    <a class="btn btn-primary" href="/posts/new">Share experience</a>
+  <% } %>
+</section>
+
+<% if (!posts.length) { %>
+  <div class="panel"><p class="muted">No experiences yet. Be the first to post.</p></div>
+<% } else { %>
+  <div class="card-grid">
+    <% posts.forEach(function(p) { %>
+      <article class="card">
+        <span class="badge"><%= escapeHtml(p.destination) %></span>
+        <h3><a href="/posts/<%= p.id %>"><%= escapeHtml(p.title) %></a></h3>
+        <p class="clamp"><%= escapeHtml(p.content) %></p>
+        <p class="meta">
+          @<%= escapeHtml(p.username) %> · <%= formatDate(p.created_at) %>
+          <% if (p.start_date) { %> · <%= formatDate(p.start_date) %><% if (p.end_date) { %>–<%= formatDate(p.end_date) %><% } %><% } %>
+        </p>
+        <div class="chip-row">
+          <% splitTags(p.tags).forEach(function(tag) { %>
+            <span class="chip chip-static">#<%= escapeHtml(tag) %></span>
+          <% }) %>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+<% } %>
+<%- include('../partials/footer') %>

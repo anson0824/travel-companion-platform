@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: travel-companion-platform
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: FORCE_SECURE_COOKIE
+        value: "1"

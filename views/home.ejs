@@ -1,0 +1,50 @@
+<%- include('partials/header') %>
+<section class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">Find people · Plan together · Share stories</p>
+    <h1>Travel smarter with companions who match your pace</h1>
+    <p class="lede">
+      Match with travelers heading to the same destinations, build collaborative itineraries,
+      and share experiences with the community.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="/register">Get started</a>
+      <a class="btn btn-secondary" href="/posts">Browse experiences</a>
+    </div>
+  </div>
+  <div class="hero-cards">
+    <article class="feature-card">
+      <h3>Matchmaking</h3>
+      <p>Set destinations, dates, and travel style — meet overlapping travelers.</p>
+    </article>
+    <article class="feature-card">
+      <h3>Collaborative trips</h3>
+      <p>Invite friends and co-edit day-by-day itineraries in one place.</p>
+    </article>
+    <article class="feature-card">
+      <h3>Experience posts</h3>
+      <p>Share tips from the road so the next traveler learns faster.</p>
+    </article>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Recent experiences</h2>
+    <a href="/posts">View all</a>
+  </div>
+  <% if (!recentPosts.length) { %>
+    <p class="muted">No posts yet — be the first to share.</p>
+  <% } else { %>
+    <div class="card-grid">
+      <% recentPosts.forEach(function(p) { %>
+        <a class="card" href="/posts/<%= p.id %>">
+          <span class="badge"><%= escapeHtml(p.destination) %></span>
+          <h3><%= escapeHtml(p.title) %></h3>
+          <p class="meta">by @<%= escapeHtml(p.username) %> · <%= formatDate(p.created_at) %></p>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+<%- include('partials/footer') %>

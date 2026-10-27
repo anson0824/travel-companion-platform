@@ -1,0 +1,35 @@
+<%- include('../partials/header') %>
+<section class="panel form-panel">
+  <h1><%= post ? 'Edit experience' : 'Share an experience' %></h1>
+  <form method="POST" action="<%= action %>">
+    <label>Title
+      <input type="text" name="title" required minlength="3" maxlength="120"
+             value="<%= escapeHtml(form.title || '') %>" placeholder="e.g. Sunrise hike in Bali" />
+    </label>
+    <label>Destination
+      <input type="text" name="destination" required maxlength="80"
+             value="<%= escapeHtml(form.destination || '') %>" placeholder="City or region" />
+    </label>
+    <div class="form-row">
+      <label>Start date (optional)
+        <input type="date" name="start_date" value="<%= escapeHtml(form.start_date || '') %>" />
+      </label>
+      <label>End date (optional)
+        <input type="date" name="end_date" value="<%= escapeHtml(form.end_date || '') %>" />
+      </label>
+    </div>
+    <label>Your story
+      <textarea name="content" rows="8" required minlength="10" maxlength="8000"
+                placeholder="What did you do, learn, or wish you knew sooner?"><%= escapeHtml(form.content || '') %></textarea>
+    </label>
+    <label>Tags (comma-separated)
+      <input type="text" name="tags" maxlength="200"
+             value="<%= escapeHtml(form.tags || '') %>" placeholder="food, hiking, budget" />
+    </label>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit"><%= post ? 'Save changes' : 'Publish' %></button>
+      <a class="btn btn-ghost" href="<%= post ? '/posts/' + post.id : '/posts' %>">Cancel</a>
+    </div>
+  </form>
+</section>
+<%- include('../partials/footer') %>

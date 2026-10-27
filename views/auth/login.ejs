@@ -1,0 +1,17 @@
+<%- include('../partials/header') %>
+<section class="auth-wrap">
+  <form class="auth-card" method="POST" action="/login" novalidate>
+    <h1>Log in</h1>
+    <p class="muted">Use your email and password to continue.</p>
+    <label>Email
+      <input type="email" name="email" required autocomplete="email" placeholder="you@example.com" />
+    </label>
+    <label>Password
+      <input type="password" name="password" required autocomplete="current-password" />
+    </label>
+    <button class="btn btn-primary btn-block" type="submit">Log in</button>
+    <p class="muted center">No account? <a href="/register">Sign up</a></p>
+    <p class="hint">Demo: demo@travel.local / Demo123!</p>
+  </form>
+</section>
+<%- include('../partials/footer') %>

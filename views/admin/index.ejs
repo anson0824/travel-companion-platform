@@ -1,0 +1,98 @@
+<%- include('../partials/header') %>
+<section class="page-head">
+  <div>
+    <h1>Admin panel</h1>
+    <p class="muted">Manage users, moderate posts, and review platform stats.</p>
+  </div>
+</section>
+
+<div class="stat-row">
+  <div class="stat"><strong><%= stats.users %></strong><span>Users</span></div>
+  <div class="stat"><strong><%= stats.posts %></strong><span>Posts</span></div>
+  <div class="stat"><strong><%= stats.disabled %></strong><span>Disabled accounts</span></div>
+</div>
+
+<section class="panel">
+  <h2>Users</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Joined</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach(function(u) { %>
+          <tr class="<%= u.disabled ? 'row-disabled' : '' %>">
+            <td><%= u.id %></td>
+            <td>@<%= escapeHtml(u.username) %></td>
+            <td><%= escapeHtml(u.email) %></td>
+            <td><span class="badge"><%= escapeHtml(u.role) %></span></td>
+            <td><%= u.disabled ? 'Disabled' : 'Active' %></td>
+            <td><%= formatDate(u.created_at) %></td>
+            <td class="table-actions">
+              <form method="POST" action="/admin/users/<%= u.id %>/role" class="inline">
+                <input type="hidden" name="role" value="<%= u.role === 'admin' ? 'user' : 'admin' %>" />
+                <button class="btn btn-sm btn-secondary" type="submit"
+                  <%= u.id === currentUser.id ? 'disabled' : '' %>>
+                  <%= u.role === 'admin' ? 'Demote' : 'Promote' %>
+                </button>
+              </form>
+              <form method="POST" action="/admin/users/<%= u.id %>/toggle-disabled" class="inline">
+                <button class="btn btn-sm <%= u.disabled ? 'btn-primary' : 'btn-danger' %>" type="submit"
+                  <%= u.id === currentUser.id ? 'disabled' : '' %>>
+                  <%= u.disabled ? 'Enable' : 'Disable' %>
+                </button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel mt">
+  <h2>All posts</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Destination</th>
+          <th>Author</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!posts.length) { %>
+          <tr><td colspan="6" class="muted">No posts.</td></tr>
+        <% } %>
+        <% posts.forEach(function(p) { %>
+          <tr>
+            <td><%= p.id %></td>
+            <td><a href="/posts/<%= p.id %>"><%= escapeHtml(p.title) %></a></td>
+            <td><%= escapeHtml(p.destination) %></td>
+            <td>@<%= escapeHtml(p.username) %></td>
+            <td><%= formatDate(p.created_at) %></td>
+            <td>
+              <form method="POST" action="/admin/posts/<%= p.id %>/delete" class="inline"
+                    onsubmit="return confirm('Delete this post as admin?');">
+                <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+<%- include('../partials/footer') %>

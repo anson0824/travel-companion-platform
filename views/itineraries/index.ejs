@@ -1,0 +1,23 @@
+<%- include('../partials/header') %>
+<section class="page-head">
+  <div>
+    <h1>Collaborative itineraries</h1>
+    <p class="muted">Create a trip, invite travelers, and plan day by day together.</p>
+  </div>
+  <a class="btn btn-primary" href="/itineraries/new">Create trip</a>
+</section>
+
+<% if (!trips.length) { %>
+  <div class="panel"><p class="muted">No trips yet.</p></div>
+<% } else { %>
+  <div class="card-grid">
+    <% trips.forEach(function(t) { %>
+      <a class="card" href="/itineraries/<%= t.id %>">
+        <span class="badge"><%= escapeHtml(t.destination) %></span>
+        <h3><%= escapeHtml(t.name) %></h3>
+        <p class="meta">Owner @<%= escapeHtml(t.owner_name) %> · <%= formatDate(t.start_date) %> – <%= formatDate(t.end_date) %></p>
+      </a>
+    <% }) %>
+  </div>
+<% } %>
+<%- include('../partials/footer') %>
