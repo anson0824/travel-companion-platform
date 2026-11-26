@@ -31,6 +31,7 @@ Extra seed travelers (password `Travel123!`): `maya@travel.local`, `ken@travel.l
 - **Experiences**: list, create, view, edit/delete own posts (title, destination, dates, content, tags)
 - **Admin** (role=admin): stats, list users, promote/demote, disable/enable accounts, delete any post
 - **Matchmaking**: travel preferences, overlapping destination/date matches, companion requests
+- **Companion chat**: private messages after a companion request is accepted
 - **Collaborative itineraries**: create trips, invite by username/email, shared day items
 
 ## Main routes
@@ -44,6 +45,7 @@ Extra seed travelers (password `Travel123!`): `maya@travel.local`, `ken@travel.l
 | `/posts`, `/posts/new`, `/posts/:id` | Experiences CRUD |
 | `/admin` | Admin panel |
 | `/matchmaking` | Companion matching |
+| `/chats`, `/chats/:id` | Chat with an accepted companion |
 | `/itineraries` | Collaborative trips |
 
 ## Deploy (Render / Railway)

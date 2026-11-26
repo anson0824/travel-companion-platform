@@ -139,12 +139,16 @@ router.post('/request/:id/respond', requireAuth, asyncRoute(async (req, res) => 
   const id = Number(req.params.id);
   const status = req.body.status === 'accepted' ? 'accepted' : 'declined';
   const row = await db.prepare('SELECT * FROM companion_requests WHERE id = ?').get(id);
-  if (!row || row.to_user_id !== req.session.userId) {
+  if (!row || Number(row.to_user_id) !== Number(req.session.userId) || row.status !== 'pending') {
     req.session.flash = { type: 'error', message: 'Request not found.' };
     return res.redirect('/matchmaking');
   }
   await db.prepare(`UPDATE companion_requests SET status = ? WHERE id = ?`).run(status, id);
-  req.session.flash = { type: 'success', message: `Request ${status}.` };
+  if (status === 'accepted') {
+    req.session.flash = { type: 'success', message: 'You are companions. Say hello in the chat.' };
+    return res.redirect(`/chats/${id}`);
+  }
+  req.session.flash = { type: 'success', message: 'Request declined.' };
   res.redirect('/matchmaking');
 }));
 

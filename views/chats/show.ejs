@@ -1,0 +1,30 @@
+<%- include('../partials/header') %>
+<section class="page-head">
+  <div>
+    <h1>Chat with @<%= escapeHtml(chat.companion) %></h1>
+    <p class="muted">Only the two of you can see this conversation.</p>
+  </div>
+  <a class="btn btn-ghost" href="/chats">All chats</a>
+</section>
+
+<section class="panel chat-panel" data-chat-id="<%= chat.id %>" data-last-id="<%= messages.length ? messages[messages.length - 1].id : 0 %>">
+  <div class="chat-log" id="chat-log" aria-live="polite">
+    <% if (!messages.length) { %>
+      <p class="muted" id="chat-empty">Say hello to @<%= escapeHtml(chat.companion) %>.</p>
+    <% } %>
+    <% messages.forEach(function(message) { %>
+      <article class="bubble<%= message.mine ? ' mine' : '' %>" data-id="<%= message.id %>">
+        <div class="who">@<%= escapeHtml(message.fromUsername) %> · <%= escapeHtml(message.createdAt) %></div>
+        <p><%= escapeHtml(message.body) %></p>
+      </article>
+    <% }) %>
+  </div>
+  <form class="chat-form" id="chat-form" method="POST" action="/chats/<%= chat.id %>/messages">
+    <label class="chat-label">Message
+      <textarea name="body" id="chat-body" rows="2" maxlength="1000" required placeholder="Write a message"></textarea>
+    </label>
+    <button class="btn btn-primary" type="submit">Send</button>
+  </form>
+</section>
+<script src="/js/chat.js"></script>
+<%- include('../partials/footer') %>

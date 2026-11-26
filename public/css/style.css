@@ -186,7 +186,35 @@ th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-s
   padding: 0.85rem 0; border-bottom: 1px solid var(--line);
 }
 
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: min(60vh, 520px);
+  overflow: auto;
+  padding: 0.2rem 0.2rem 0.8rem;
+}
+.bubble {
+  max-width: min(75%, 32rem);
+  padding: 0.65rem 0.85rem;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #f8fafc;
+}
+.bubble.mine {
+  align-self: flex-end;
+  background: #ccfbf1;
+  border-color: #99f6e4;
+}
+.bubble .who { font-size: 0.75rem; font-weight: 700; color: var(--muted); }
+.bubble p { margin: 0.2rem 0 0; white-space: pre-wrap; }
+.chat-form { display: flex; gap: 0.6rem; align-items: end; margin-top: 0.4rem; }
+.chat-label { flex: 1; margin-bottom: 0; }
+.chat-form textarea { min-height: 3.2rem; resize: vertical; }
+
 @media (max-width: 640px) {
   .form-row { grid-template-columns: 1fr; }
   .hero-copy { padding: 1.4rem; }
+  .chat-form { flex-direction: column; align-items: stretch; }
+  .bubble { max-width: 92%; }
 }

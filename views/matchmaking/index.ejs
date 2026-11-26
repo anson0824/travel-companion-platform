@@ -117,7 +117,9 @@
           <strong>@<%= escapeHtml(r.to_username) %></strong>
           <span class="badge"><%= escapeHtml(r.status) %></span>
           <% if (r.message) { %><span class="muted">“<%= escapeHtml(r.message) %>”</span><% } %>
-          <% if (r.status === 'pending' && r.to_user_id === currentUser.id) { %>
+          <% if (r.status === 'accepted') { %>
+            <a class="btn btn-sm btn-primary" href="/chats/<%= r.id %>">Open chat</a>
+          <% } else if (r.status === 'pending' && Number(r.to_user_id) === Number(currentUser.id)) { %>
             <form class="inline" method="POST" action="/matchmaking/request/<%= r.id %>/respond">
               <input type="hidden" name="status" value="accepted" />
               <button class="btn btn-sm btn-primary" type="submit">Accept</button>

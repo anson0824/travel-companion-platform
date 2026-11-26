@@ -1,0 +1,24 @@
+<%- include('../partials/header') %>
+<section class="page-head">
+  <div>
+    <h1>Companion chats</h1>
+    <p class="muted">A chat opens after you accept a companion request, or someone accepts yours.</p>
+  </div>
+  <a class="btn btn-secondary" href="/matchmaking">Find companions</a>
+</section>
+
+<section class="panel">
+  <% if (!chats.length) { %>
+    <p class="muted">No companion chats yet. Send a request from Matchmaking, and the chat appears here once it is accepted.</p>
+  <% } else { %>
+    <ul class="list">
+      <% chats.forEach(function(chat) { %>
+        <li>
+          <a href="/chats/<%= chat.id %>"><strong>@<%= escapeHtml(chat.companion) %></strong></a>
+          <span class="muted"><%= escapeHtml(chat.last_body || 'No messages yet') %></span>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+<%- include('../partials/footer') %>

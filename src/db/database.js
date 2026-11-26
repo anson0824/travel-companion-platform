@@ -132,6 +132,14 @@ const SCHEMA = `
     UNIQUE(from_user_id, to_user_id)
   );
 
+  CREATE TABLE IF NOT EXISTS companion_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id INTEGER NOT NULL REFERENCES companion_requests(id) ON DELETE CASCADE,
+    from_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    body TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS trips (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

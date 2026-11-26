@@ -14,6 +14,7 @@ const authRoutes = require('./routes/auth');
 const postsRoutes = require('./routes/posts');
 const adminRoutes = require('./routes/admin');
 const matchmakingRoutes = require('./routes/matchmaking');
+const chatsRoutes = require('./routes/chats');
 const itinerariesRoutes = require('./routes/itineraries');
 
 async function main() {
@@ -72,6 +73,7 @@ async function main() {
   app.use('/posts', postsRoutes);
   app.use('/admin', adminRoutes);
   app.use('/matchmaking', matchmakingRoutes);
+  app.use('/chats', chatsRoutes);
   app.use('/itineraries', itinerariesRoutes);
 
   app.use((req, res) => {
