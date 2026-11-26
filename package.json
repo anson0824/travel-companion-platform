@@ -20,11 +20,13 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "better-sqlite3": "^11.7.0",
+    "connect-pg-simple": "^10.0.0",
     "connect-sqlite3": "^0.9.15",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
-    "method-override": "^3.0.0"
+    "method-override": "^3.0.0",
+    "pg": "^8.23.1"
   },
   "allowScripts": {
     "bcrypt@5.1.1": true,

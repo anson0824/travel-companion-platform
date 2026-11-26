@@ -1,12 +1,12 @@
 const express = require('express');
 const { db } = require('../db/database');
 const { requireAuth } = require('../middleware/auth');
-const { parseTags, tagsToString } = require('../utils');
+const { parseTags, tagsToString, asyncRoute } = require('../utils');
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
-  const posts = db
+router.get('/', asyncRoute(async (req, res) => {
+  const posts = await db
     .prepare(
       `SELECT p.*, u.username
        FROM posts p JOIN users u ON u.id = p.user_id
@@ -14,7 +14,7 @@ router.get('/', (req, res) => {
     )
     .all();
   res.render('posts/index', { title: 'Travel experiences', posts });
-});
+}));
 
 router.get('/new', requireAuth, (req, res) => {
   res.render('posts/form', {
@@ -26,7 +26,7 @@ router.get('/new', requireAuth, (req, res) => {
   });
 });
 
-router.post('/', requireAuth, (req, res) => {
+router.post('/', requireAuth, asyncRoute(async (req, res) => {
   const title = String(req.body.title || '').trim();
   const destination = String(req.body.destination || '').trim();
   const start_date = String(req.body.start_date || '').trim() || null;
@@ -67,7 +67,7 @@ router.post('/', requireAuth, (req, res) => {
     });
   }
 
-  const result = db
+  const result = await db
     .prepare(
       `INSERT INTO posts (user_id, title, destination, start_date, end_date, content, tags)
        VALUES (?, ?, ?, ?, ?, ?, ?)`
@@ -76,10 +76,10 @@ router.post('/', requireAuth, (req, res) => {
 
   req.session.flash = { type: 'success', message: 'Experience shared!' };
   res.redirect(`/posts/${result.lastInsertRowid}`);
-});
+}));
 
-router.get('/:id', (req, res) => {
-  const post = db
+router.get('/:id', asyncRoute(async (req, res) => {
+  const post = await db
     .prepare(
       `SELECT p.*, u.username
        FROM posts p JOIN users u ON u.id = p.user_id
@@ -91,10 +91,10 @@ router.get('/:id', (req, res) => {
     return res.redirect('/posts');
   }
   res.render('posts/show', { title: post.title, post });
-});
+}));
 
-router.get('/:id/edit', requireAuth, (req, res) => {
-  const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(req.params.id);
+router.get('/:id/edit', requireAuth, asyncRoute(async (req, res) => {
+  const post = await db.prepare('SELECT * FROM posts WHERE id = ?').get(req.params.id);
   if (!post) {
     req.session.flash = { type: 'error', message: 'Post not found.' };
     return res.redirect('/posts');
@@ -110,10 +110,10 @@ router.get('/:id/edit', requireAuth, (req, res) => {
     action: `/posts/${post.id}?_method=PUT`,
     method: 'POST'
   });
-});
+}));
 
-router.put('/:id', requireAuth, (req, res) => {
-  const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(req.params.id);
+router.put('/:id', requireAuth, asyncRoute(async (req, res) => {
+  const post = await db.prepare('SELECT * FROM posts WHERE id = ?').get(req.params.id);
   if (!post) {
     req.session.flash = { type: 'error', message: 'Post not found.' };
     return res.redirect('/posts');
@@ -142,17 +142,17 @@ router.put('/:id', requireAuth, (req, res) => {
     });
   }
 
-  db.prepare(
+  await db.prepare(
     `UPDATE posts SET title=?, destination=?, start_date=?, end_date=?, content=?, tags=?,
      updated_at=datetime('now') WHERE id=?`
   ).run(title, destination, start_date, end_date, content, tags, post.id);
 
   req.session.flash = { type: 'success', message: 'Experience updated.' };
   res.redirect(`/posts/${post.id}`);
-});
+}));
 
-router.delete('/:id', requireAuth, (req, res) => {
-  const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(req.params.id);
+router.delete('/:id', requireAuth, asyncRoute(async (req, res) => {
+  const post = await db.prepare('SELECT * FROM posts WHERE id = ?').get(req.params.id);
   if (!post) {
     req.session.flash = { type: 'error', message: 'Post not found.' };
     return res.redirect('/posts');
@@ -161,9 +161,9 @@ router.delete('/:id', requireAuth, (req, res) => {
     req.session.flash = { type: 'error', message: 'You can only delete your own posts.' };
     return res.redirect(`/posts/${post.id}`);
   }
-  db.prepare('DELETE FROM posts WHERE id = ?').run(post.id);
+  await db.prepare('DELETE FROM posts WHERE id = ?').run(post.id);
   req.session.flash = { type: 'success', message: 'Post deleted.' };
   res.redirect('/posts');
-});
+}));
 
 module.exports = router;

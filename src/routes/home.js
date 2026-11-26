@@ -1,12 +1,13 @@
 const express = require('express');
 const { db } = require('../db/database');
 const { requireAuth } = require('../middleware/auth');
+const { asyncRoute } = require('../utils');
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
+router.get('/', asyncRoute(async (req, res) => {
   if (req.session.userId) return res.redirect('/dashboard');
-  const recentPosts = db
+  const recentPosts = await db
     .prepare(
       `SELECT p.id, p.title, p.destination, p.created_at, u.username
        FROM posts p JOIN users u ON u.id = p.user_id
@@ -14,35 +15,35 @@ router.get('/', (req, res) => {
     )
     .all();
   res.render('home', { title: 'Travel Companion Platform', recentPosts });
-});
+}));
 
-router.get('/dashboard', requireAuth, (req, res) => {
-  const myPosts = db
+router.get('/dashboard', requireAuth, asyncRoute(async (req, res) => {
+  const myPosts = await db
     .prepare(
       `SELECT id, title, destination, created_at FROM posts
        WHERE user_id = ? ORDER BY created_at DESC LIMIT 5`
     )
     .all(req.session.userId);
-  const myTrips = db
+  const myTrips = await db
     .prepare(
       `SELECT t.id, t.name, t.destination
        FROM trips t JOIN trip_members m ON m.trip_id = t.id
        WHERE m.user_id = ? ORDER BY t.created_at DESC LIMIT 5`
     )
     .all(req.session.userId);
-  const pendingRequests = db
+  const pending = await db
     .prepare(
       `SELECT COUNT(*) AS c FROM companion_requests
        WHERE to_user_id = ? AND status = 'pending'`
     )
-    .get(req.session.userId).c;
+    .get(req.session.userId);
 
   res.render('dashboard', {
     title: 'Dashboard',
     myPosts,
     myTrips,
-    pendingRequests
+    pendingRequests: Number(pending.c)
   });
-});
+}));
 
 module.exports = router;

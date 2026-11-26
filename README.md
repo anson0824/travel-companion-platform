@@ -2,7 +2,7 @@
 
 **Intelligent Travel Companion Matchmaking and Collaborative Itinerary Management Platform**
 
-Node.js + Express + EJS + SQLite MVP. Zero external database setup.
+Node.js + Express + EJS. Accounts, profiles, and matches are stored in Postgres when `DATABASE_URL` is set, and in a local SQLite file otherwise.
 
 ## Quick start
 
@@ -53,10 +53,11 @@ Extra seed travelers (password `Travel123!`): `maya@travel.local`, `ken@travel.l
    - `PORT` — usually set automatically by the host
    - `NODE_ENV=production`
    - `SESSION_SECRET` — long random string
-3. Ensure the app can write a local `data/` directory (SQLite files). On ephemeral disks, data resets on redeploy unless you attach a persistent volume.
+3. Set `DATABASE_URL` to the internal Postgres connection string (see `render.yaml`). Without it, the app uses a local SQLite file under `data/`, which is wiped when a free Render service restarts.
 4. Optional: `FORCE_SECURE_COOKIE=1` if you terminate TLS and want `Secure` session cookies.
 
 ## Stack
 
-- Express, EJS, express-session + connect-sqlite3
-- better-sqlite3, bcrypt, method-override
+- Express, EJS, express-session
+- Postgres (`pg`, connect-pg-simple) when `DATABASE_URL` is set; SQLite (`better-sqlite3`, connect-sqlite3) locally
+- bcrypt, method-override

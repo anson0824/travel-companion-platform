@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const { db } = require('../db/database');
 const { guestOnly, requireAuth } = require('../middleware/auth');
-const { validateEmail, validateUsername } = require('../utils');
+const { validateEmail, validateUsername, asyncRoute, isUniqueError } = require('../utils');
 
 const router = express.Router();
 
@@ -10,7 +10,7 @@ router.get('/login', guestOnly, (req, res) => {
   res.render('auth/login', { title: 'Login', form: {} });
 });
 
-router.post('/login', guestOnly, (req, res) => {
+router.post('/login', guestOnly, asyncRoute(async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
 
@@ -19,7 +19,7 @@ router.post('/login', guestOnly, (req, res) => {
     return res.redirect('/login');
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE').get(email);
+  const user = await db.prepare('SELECT * FROM users WHERE lower(email) = lower(?)').get(email);
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     req.session.flash = { type: 'error', message: 'Invalid email or password.' };
     return res.redirect('/login');
@@ -35,13 +35,13 @@ router.post('/login', guestOnly, (req, res) => {
   req.session.role = user.role;
   req.session.flash = { type: 'success', message: `Welcome back, ${user.username}!` };
   res.redirect('/dashboard');
-});
+}));
 
 router.get('/register', guestOnly, (req, res) => {
   res.render('auth/register', { title: 'Create account', form: {} });
 });
 
-router.post('/register', guestOnly, (req, res) => {
+router.post('/register', guestOnly, asyncRoute(async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const username = String(req.body.username || '').trim();
   const password = String(req.body.password || '');
@@ -66,8 +66,8 @@ router.post('/register', guestOnly, (req, res) => {
     return res.render('auth/register', { title: 'Create account', form });
   }
 
-  const exists = db
-    .prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE OR username = ? COLLATE NOCASE')
+  const exists = await db
+    .prepare('SELECT id FROM users WHERE lower(email) = lower(?) OR lower(username) = lower(?)')
     .get(email, username);
   if (exists) {
     req.session.flash = { type: 'error', message: 'Email or username already taken.' };
@@ -75,19 +75,24 @@ router.post('/register', guestOnly, (req, res) => {
   }
 
   const hash = bcrypt.hashSync(password, 10);
-  const result = db
-    .prepare('INSERT INTO users (email, username, password_hash, role) VALUES (?, ?, ?, ?)')
-    .run(email, username, hash, 'user');
+  try {
+    const result = await db
+      .prepare('INSERT INTO users (email, username, password_hash, role) VALUES (?, ?, ?, ?)')
+      .run(email, username, hash, 'user');
+    await db.prepare('INSERT INTO profiles (user_id) VALUES (?)').run(result.lastInsertRowid);
 
-  db.prepare('INSERT INTO profiles (user_id) VALUES (?)').run(result.lastInsertRowid);
-
-  req.session.userId = result.lastInsertRowid;
-  req.session.email = email;
-  req.session.username = username;
-  req.session.role = 'user';
-  req.session.flash = { type: 'success', message: 'Account created. Welcome aboard!' };
-  res.redirect('/dashboard');
-});
+    req.session.userId = result.lastInsertRowid;
+    req.session.email = email;
+    req.session.username = username;
+    req.session.role = 'user';
+    req.session.flash = { type: 'success', message: 'Account created. Welcome aboard!' };
+    res.redirect('/dashboard');
+  } catch (error) {
+    if (!isUniqueError(error)) throw error;
+    req.session.flash = { type: 'error', message: 'Email or username already taken.' };
+    res.render('auth/register', { title: 'Create account', form });
+  }
+}));
 
 router.post('/logout', requireAuth, (req, res) => {
   req.session.destroy(() => {

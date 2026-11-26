@@ -8,19 +8,21 @@ const {
   destinationsOverlap,
   TRAVEL_REGIONS,
   isTravelRegion,
-  regionLabel
+  regionLabel,
+  asyncRoute,
+  isUniqueError
 } = require('../utils');
 
 const router = express.Router();
 
-router.get('/', requireAuth, (req, res) => {
-  let profile = db.prepare('SELECT * FROM profiles WHERE user_id = ?').get(req.session.userId);
+router.get('/', requireAuth, asyncRoute(async (req, res) => {
+  let profile = await db.prepare('SELECT * FROM profiles WHERE user_id = ?').get(req.session.userId);
   if (!profile) {
-    db.prepare('INSERT INTO profiles (user_id) VALUES (?)').run(req.session.userId);
-    profile = db.prepare('SELECT * FROM profiles WHERE user_id = ?').get(req.session.userId);
+    await db.prepare('INSERT INTO profiles (user_id) VALUES (?)').run(req.session.userId);
+    profile = await db.prepare('SELECT * FROM profiles WHERE user_id = ?').get(req.session.userId);
   }
 
-  const others = db
+  const others = await db
     .prepare(
       `SELECT u.id, u.username, p.destinations, p.travel_start, p.travel_end, p.travel_styles, p.bio
        FROM users u
@@ -44,18 +46,18 @@ router.get('/', requireAuth, (req, res) => {
     .sort((a, b) => b.score - a.score);
 
   const poolMembers = profile.region
-    ? db
+    ? await db
         .prepare(
           `SELECT u.id, u.username, p.destinations, p.travel_start, p.travel_end, p.travel_styles, p.bio, p.region
            FROM users u
            JOIN profiles p ON p.user_id = u.id
            WHERE u.id != ? AND u.disabled = 0 AND p.region = ?
-           ORDER BY u.username COLLATE NOCASE`
+           ORDER BY lower(u.username)`
         )
         .all(req.session.userId, profile.region)
     : [];
 
-  const requests = db
+  const requests = await db
     .prepare(
       `SELECT r.*,
               fu.username AS from_username,
@@ -77,9 +79,9 @@ router.get('/', requireAuth, (req, res) => {
     regions: TRAVEL_REGIONS,
     regionLabel: regionLabel(profile.region)
   });
-});
+}));
 
-router.post('/profile', requireAuth, (req, res) => {
+router.post('/profile', requireAuth, asyncRoute(async (req, res) => {
   const destinations = String(req.body.destinations || '').trim();
   const travel_start = String(req.body.travel_start || '').trim() || null;
   const travel_end = String(req.body.travel_end || '').trim() || null;
@@ -91,7 +93,7 @@ router.post('/profile', requireAuth, (req, res) => {
     return res.redirect('/matchmaking');
   }
 
-  db.prepare(
+  await db.prepare(
     `INSERT INTO profiles (user_id, destinations, travel_start, travel_end, travel_styles, bio, region, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
      ON CONFLICT(user_id) DO UPDATE SET
@@ -106,43 +108,44 @@ router.post('/profile', requireAuth, (req, res) => {
 
   req.session.flash = { type: 'success', message: 'Travel preferences saved.' };
   res.redirect('/matchmaking');
-});
+}));
 
-router.post('/request', requireAuth, (req, res) => {
+router.post('/request', requireAuth, asyncRoute(async (req, res) => {
   const toUserId = Number(req.body.to_user_id);
   const message = String(req.body.message || '').trim().slice(0, 300);
   if (!toUserId || toUserId === req.session.userId) {
     req.session.flash = { type: 'error', message: 'Invalid companion request.' };
     return res.redirect('/matchmaking');
   }
-  const target = db.prepare('SELECT id FROM users WHERE id = ? AND disabled = 0').get(toUserId);
+  const target = await db.prepare('SELECT id FROM users WHERE id = ? AND disabled = 0').get(toUserId);
   if (!target) {
     req.session.flash = { type: 'error', message: 'User not found.' };
     return res.redirect('/matchmaking');
   }
   try {
-    db.prepare(
+    await db.prepare(
       `INSERT INTO companion_requests (from_user_id, to_user_id, message)
        VALUES (?, ?, ?)`
     ).run(req.session.userId, toUserId, message);
     req.session.flash = { type: 'success', message: 'Companion request sent.' };
-  } catch (e) {
+  } catch (error) {
+    if (!isUniqueError(error)) throw error;
     req.session.flash = { type: 'error', message: 'You already sent a request to this traveler.' };
   }
   res.redirect('/matchmaking');
-});
+}));
 
-router.post('/request/:id/respond', requireAuth, (req, res) => {
+router.post('/request/:id/respond', requireAuth, asyncRoute(async (req, res) => {
   const id = Number(req.params.id);
   const status = req.body.status === 'accepted' ? 'accepted' : 'declined';
-  const row = db.prepare('SELECT * FROM companion_requests WHERE id = ?').get(id);
+  const row = await db.prepare('SELECT * FROM companion_requests WHERE id = ?').get(id);
   if (!row || row.to_user_id !== req.session.userId) {
     req.session.flash = { type: 'error', message: 'Request not found.' };
     return res.redirect('/matchmaking');
   }
-  db.prepare(`UPDATE companion_requests SET status = ? WHERE id = ?`).run(status, id);
+  await db.prepare(`UPDATE companion_requests SET status = ? WHERE id = ?`).run(status, id);
   req.session.flash = { type: 'success', message: `Request ${status}.` };
   res.redirect('/matchmaking');
-});
+}));
 
 module.exports = router;

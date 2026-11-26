@@ -44,6 +44,19 @@ function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
 }
 
+function asyncRoute(handler) {
+  return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+}
+
+function isUniqueError(error) {
+  return Boolean(
+    error &&
+      (error.code === '23505' ||
+        error.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+        /unique/i.test(error.message || ''))
+  );
+}
+
 function validateUsername(username) {
   return /^[a-zA-Z0-9_]{3,24}$/.test(String(username || '').trim());
 }
@@ -113,6 +126,8 @@ module.exports = {
   destinationsOverlap,
   validateEmail,
   validateUsername,
+  asyncRoute,
+  isUniqueError,
   TRAVEL_REGIONS,
   isTravelRegion,
   regionLabel,

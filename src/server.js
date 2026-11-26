@@ -3,8 +3,9 @@ const express = require('express');
 const session = require('express-session');
 const methodOverride = require('method-override');
 const SQLiteStore = require('connect-sqlite3')(session);
+const PgStore = require('connect-pg-simple');
 
-const { init } = require('./db/database');
+const { init, usePostgres, getPool } = require('./db/database');
 const { attachUser } = require('./middleware/auth');
 const { escapeHtml } = require('./utils');
 
@@ -15,68 +16,84 @@ const adminRoutes = require('./routes/admin');
 const matchmakingRoutes = require('./routes/matchmaking');
 const itinerariesRoutes = require('./routes/itineraries');
 
-init();
+async function main() {
+  await init();
 
-const app = express();
-app.set('trust proxy', 1); // Render/Cloudflare terminate TLS in front of the app
-const PORT = process.env.PORT || 3000;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-travel-companion-secret-change-me';
+  const app = express();
+  app.set('trust proxy', 1);
+  const PORT = process.env.PORT || 3000;
+  const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-travel-companion-secret-change-me';
 
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, '../views'));
+  app.set('view engine', 'ejs');
+  app.set('views', path.join(__dirname, '../views'));
 
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
-app.use(methodOverride('_method'));
-app.use(express.static(path.join(__dirname, '../public')));
+  app.use(express.urlencoded({ extended: false }));
+  app.use(express.json());
+  app.use(methodOverride('_method'));
+  app.use(express.static(path.join(__dirname, '../public')));
 
-app.use(
-  session({
-    store: new SQLiteStore({
-      db: 'sessions.db',
-      dir: path.join(__dirname, '../data')
-    }),
-    secret: SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production' && process.env.FORCE_SECURE_COOKIE === '1'
-    }
-  })
-);
+  const store = usePostgres
+    ? new (PgStore(session))({
+        pool: getPool(),
+        tableName: 'user_sessions',
+        createTableIfMissing: true
+      })
+    : new SQLiteStore({
+        db: 'sessions.db',
+        dir: path.join(__dirname, '../data')
+      });
 
-app.use(attachUser);
-app.locals.escapeHtml = escapeHtml;
-app.locals.formatDate = (d) => (d ? String(d).slice(0, 10) : '—');
-app.locals.splitTags = (t) =>
-  String(t || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+  app.use(
+    session({
+      store,
+      secret: SESSION_SECRET,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production' && process.env.FORCE_SECURE_COOKIE === '1'
+      }
+    })
+  );
 
-app.use(homeRoutes);
-app.use(authRoutes);
-app.use('/posts', postsRoutes);
-app.use('/admin', adminRoutes);
-app.use('/matchmaking', matchmakingRoutes);
-app.use('/itineraries', itinerariesRoutes);
+  app.use(attachUser);
+  app.locals.escapeHtml = escapeHtml;
+  app.locals.formatDate = (d) => (d ? String(d).slice(0, 10) : '—');
+  app.locals.splitTags = (t) =>
+    String(t || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
 
-app.use((req, res) => {
-  res.status(404).render('error', { title: 'Not found', status: 404, message: 'Page not found.' });
-});
+  app.use(homeRoutes);
+  app.use(authRoutes);
+  app.use('/posts', postsRoutes);
+  app.use('/admin', adminRoutes);
+  app.use('/matchmaking', matchmakingRoutes);
+  app.use('/itineraries', itinerariesRoutes);
 
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).render('error', {
-    title: 'Error',
-    status: 500,
-    message: 'Something went wrong.'
+  app.use((req, res) => {
+    res.status(404).render('error', { title: 'Not found', status: 404, message: 'Page not found.' });
   });
-});
 
-app.listen(PORT, () => {
-  console.log(`Travel Companion Platform listening on http://localhost:${PORT}`);
+  app.use((err, req, res, next) => {
+    console.error(err);
+    if (res.headersSent) return next(err);
+    res.status(500).render('error', {
+      title: 'Error',
+      status: 500,
+      message: 'Something went wrong.'
+    });
+  });
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Travel Companion Platform listening on http://localhost:${PORT}`);
+  });
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
 });
