@@ -1,7 +1,15 @@
 const express = require('express');
 const { db } = require('../db/database');
 const { requireAuth } = require('../middleware/auth');
-const { parseTags, tagsToString, overlapDates, destinationsOverlap } = require('../utils');
+const {
+  parseTags,
+  tagsToString,
+  overlapDates,
+  destinationsOverlap,
+  TRAVEL_REGIONS,
+  isTravelRegion,
+  regionLabel
+} = require('../utils');
 
 const router = express.Router();
 
@@ -35,6 +43,18 @@ router.get('/', requireAuth, (req, res) => {
     .filter((m) => m.score > 0)
     .sort((a, b) => b.score - a.score);
 
+  const poolMembers = profile.region
+    ? db
+        .prepare(
+          `SELECT u.id, u.username, p.destinations, p.travel_start, p.travel_end, p.travel_styles, p.bio, p.region
+           FROM users u
+           JOIN profiles p ON p.user_id = u.id
+           WHERE u.id != ? AND u.disabled = 0 AND p.region = ?
+           ORDER BY u.username COLLATE NOCASE`
+        )
+        .all(req.session.userId, profile.region)
+    : [];
+
   const requests = db
     .prepare(
       `SELECT r.*,
@@ -52,7 +72,10 @@ router.get('/', requireAuth, (req, res) => {
     title: 'Find companions',
     profile,
     matches,
-    requests
+    requests,
+    poolMembers,
+    regions: TRAVEL_REGIONS,
+    regionLabel: regionLabel(profile.region)
   });
 });
 
@@ -62,18 +85,24 @@ router.post('/profile', requireAuth, (req, res) => {
   const travel_end = String(req.body.travel_end || '').trim() || null;
   const travel_styles = tagsToString(parseTags(req.body.travel_styles));
   const bio = String(req.body.bio || '').trim().slice(0, 500);
+  const region = String(req.body.region || '').trim();
+  if (region && !isTravelRegion(region)) {
+    req.session.flash = { type: 'error', message: 'Choose a travel location from the list.' };
+    return res.redirect('/matchmaking');
+  }
 
   db.prepare(
-    `INSERT INTO profiles (user_id, destinations, travel_start, travel_end, travel_styles, bio, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+    `INSERT INTO profiles (user_id, destinations, travel_start, travel_end, travel_styles, bio, region, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
      ON CONFLICT(user_id) DO UPDATE SET
        destinations=excluded.destinations,
        travel_start=excluded.travel_start,
        travel_end=excluded.travel_end,
        travel_styles=excluded.travel_styles,
        bio=excluded.bio,
+       region=excluded.region,
        updated_at=datetime('now')`
-  ).run(req.session.userId, destinations, travel_start, travel_end, travel_styles, bio);
+  ).run(req.session.userId, destinations, travel_start, travel_end, travel_styles, bio, region);
 
   req.session.flash = { type: 'success', message: 'Travel preferences saved.' };
   res.redirect('/matchmaking');

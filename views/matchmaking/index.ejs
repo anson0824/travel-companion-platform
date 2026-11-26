@@ -2,13 +2,26 @@
 <section class="page-head">
   <div>
     <h1>Companion matchmaking</h1>
-    <p class="muted">Set where and when you want to travel — we'll surface overlapping travelers.</p>
+    <p class="muted">Pick a travel location to join that pool, and set destinations and dates to find overlapping travelers.</p>
   </div>
 </section>
 
 <section class="panel">
   <h2>Your travel preferences</h2>
   <form method="POST" action="/matchmaking/profile">
+    <label for="destination-search">Travel destination
+      <div class="combo" data-location-combo>
+        <input id="destination-search" class="combo-input" type="text" role="combobox"
+               aria-autocomplete="list" aria-expanded="false" aria-controls="destination-list"
+               placeholder="Type to search, such as Eu or Mainland"
+               value="<%= escapeHtml(regionLabel) %>" autocomplete="off" />
+        <input type="hidden" name="region" value="<%= escapeHtml(profile.region || '') %>" />
+        <ul id="destination-list" class="combo-list" role="listbox" hidden></ul>
+      </div>
+    </label>
+    <p class="muted">Type a few characters and pick a matching place from the menu. Travelers who choose the same destination appear in your pool.</p>
+    <script id="travel-locations" type="application/json"><%- JSON.stringify(regions) %></script>
+    <script src="/js/location-combo.js"></script>
     <label>Destinations interested in (comma-separated)
       <input type="text" name="destinations" value="<%= escapeHtml(profile.destinations || '') %>"
              placeholder="Tokyo, Bali, Lisbon" />
@@ -30,6 +43,36 @@
     </label>
     <button class="btn btn-primary" type="submit">Save preferences</button>
   </form>
+</section>
+
+<section class="panel mt">
+  <h2>Same location pool</h2>
+  <% if (!profile.region) { %>
+    <p class="muted">Select a travel location above and save to see travelers in that pool.</p>
+  <% } else if (!poolMembers.length) { %>
+    <p class="muted">You are in the <%= escapeHtml(regionLabel) %> pool. No other travelers have selected it yet.</p>
+  <% } else { %>
+    <p class="muted"><%= poolMembers.length %> traveler<%= poolMembers.length === 1 ? '' : 's' %> also selected <%= escapeHtml(regionLabel) %>.</p>
+    <div class="card-grid">
+      <% poolMembers.forEach(function(m) { %>
+        <article class="card">
+          <h3>@<%= escapeHtml(m.username) %></h3>
+          <p class="meta"><span class="badge">same location · <%= escapeHtml(regionLabel) %></span></p>
+          <p><strong>Going:</strong> <%= escapeHtml(m.destinations || '—') %></p>
+          <p><strong>Dates:</strong> <%= formatDate(m.travel_start) %> – <%= formatDate(m.travel_end) %></p>
+          <p><strong>Style:</strong> <%= escapeHtml(m.travel_styles || '—') %></p>
+          <p class="muted"><%= escapeHtml(m.bio || '') %></p>
+          <form method="POST" action="/matchmaking/request">
+            <input type="hidden" name="to_user_id" value="<%= m.id %>" />
+            <label>Message
+              <input type="text" name="message" maxlength="300" placeholder="Heading to the same place?" />
+            </label>
+            <button class="btn btn-secondary btn-sm" type="submit">Send companion request</button>
+          </form>
+        </article>
+      <% }) %>
+    </div>
+  <% } %>
 </section>
 
 <section class="panel mt">

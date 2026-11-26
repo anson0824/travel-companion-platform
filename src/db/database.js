@@ -46,6 +46,7 @@ function initSchema() {
       travel_end TEXT,
       travel_styles TEXT NOT NULL DEFAULT '',
       bio TEXT NOT NULL DEFAULT '',
+      region TEXT NOT NULL DEFAULT '',
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -87,7 +88,12 @@ function initSchema() {
       created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
-  `);
+    `);
+
+  const profileColumns = db.prepare('PRAGMA table_info(profiles)').all();
+  if (!profileColumns.some((column) => column.name === 'region')) {
+    db.exec("ALTER TABLE profiles ADD COLUMN region TEXT NOT NULL DEFAULT ''");
+  }
 }
 
 function seedUsers() {
@@ -98,7 +104,7 @@ function seedUsers() {
     'INSERT INTO users (email, username, password_hash, role) VALUES (?, ?, ?, ?)'
   );
   const profile = db.prepare(
-    'INSERT INTO profiles (user_id, destinations, travel_start, travel_end, travel_styles, bio) VALUES (?, ?, ?, ?, ?, ?)'
+    'INSERT INTO profiles (user_id, destinations, travel_start, travel_end, travel_styles, bio, region) VALUES (?, ?, ?, ?, ?, ?, ?)'
   );
 
   const adminHash = bcrypt.hashSync('Admin123!', 10);
@@ -110,10 +116,42 @@ function seedUsers() {
   const t1 = insert.run('maya@travel.local', 'maya', travelerHash, 'user');
   const t2 = insert.run('ken@travel.local', 'ken', travelerHash, 'user');
 
-  profile.run(admin.lastInsertRowid, 'Tokyo, Kyoto', '2026-11-01', '2026-11-10', 'culture,food', 'Platform admin & traveler.');
-  profile.run(demo.lastInsertRowid, 'Tokyo, Osaka, Bali', '2026-11-05', '2026-11-15', 'adventure,food,photography', 'Looking for a Tokyo adventure buddy.');
-  profile.run(t1.lastInsertRowid, 'Tokyo, Seoul', '2026-11-03', '2026-11-12', 'culture,food,shopping', 'Foodie exploring East Asia.');
-  profile.run(t2.lastInsertRowid, 'Bali, Bangkok', '2026-12-01', '2026-12-14', 'beach,adventure,budget', 'Island hopping this winter.');
+  profile.run(
+    admin.lastInsertRowid,
+    'Tokyo, Kyoto',
+    '2026-11-01',
+    '2026-11-10',
+    'culture,food',
+    'Platform admin & traveler.',
+    'mainland'
+  );
+  profile.run(
+    demo.lastInsertRowid,
+    'Tokyo, Osaka, Bali',
+    '2026-11-05',
+    '2026-11-15',
+    'adventure,food,photography',
+    'Looking for a Tokyo adventure buddy.',
+    'europe'
+  );
+  profile.run(
+    t1.lastInsertRowid,
+    'Tokyo, Seoul',
+    '2026-11-03',
+    '2026-11-12',
+    'culture,food,shopping',
+    'Foodie exploring East Asia.',
+    'europe'
+  );
+  profile.run(
+    t2.lastInsertRowid,
+    'Bali, Bangkok',
+    '2026-12-01',
+    '2026-12-14',
+    'beach,adventure,budget',
+    'Island hopping this winter.',
+    'mainland'
+  );
 
   const post = db.prepare(
     `INSERT INTO posts (user_id, title, destination, start_date, end_date, content, tags)
@@ -139,9 +177,28 @@ function seedUsers() {
   );
 }
 
+function backfillDemoRegions() {
+  const assignments = [
+    ['europe', 'demo'],
+    ['europe', 'maya'],
+    ['mainland', 'ken'],
+    ['mainland', 'admin']
+  ];
+  const update = db.prepare(
+    `UPDATE profiles
+     SET region = ?
+     WHERE region = ''
+       AND user_id = (SELECT id FROM users WHERE username = ? COLLATE NOCASE)`
+  );
+  for (const [region, username] of assignments) {
+    update.run(region, username);
+  }
+}
+
 function init() {
   initSchema();
   seedUsers();
+  backfillDemoRegions();
 }
 
 module.exports = { db, init };
